@@ -19,6 +19,7 @@
 - naprawiono otwieranie ukrytych arkuszy wybranych świadomie z menu użytkownika.
 - usunięto podwójny zapis nowych importów do `Raport` i `Audyt importow`; rozszerzony audyt jest jednym źródłem dla cofania, duplikatów i jakości, z odczytem starego Raportu tylko dla zgodności.
 - surowy arkusz `Historia` zastąpiono w codziennym menu czytelnym oknem zdarzeń z filtrem i linkami do plików; arkusz źródłowy pozostaje dostępny w widoku managera.
+- przywrócono firmowe logo kota w widoku `O aplikacji`; obraz ma przezroczyste otoczenie i lekką, zoptymalizowaną postać, aby nie spowalniać okna.
 
 # Inventory PRO 4.2
 
