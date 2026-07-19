@@ -18,7 +18,9 @@ function onOpen() {
     .addItem('Testy raportowania', 'runReportingEngineTests')
     .addItem('Waliduj konfigurację', 'validateEnterpriseConfiguration')
     .addItem('Pokaż diagnostykę', 'showEnterpriseDiagnostics')
-    .addItem('Diagnostyka Parsera 4.2', 'showParserDiagnostics')
+    .addItem('Diagnostyka Parsera 4.3', 'showParserDiagnostics')
+    .addItem('Audyt formuł PAWILONÓW', 'auditInventoryFormulaCoverageWithDialog')
+    .addItem('Przywróć formuły PAWILONÓW (z backupem)', 'repairInventoryFormulasWithDialog')
     .addSeparator()
     .addItem('Wyczyść cache katalogu', 'clearProductCatalogCache')
     .addItem('Audyt danych produktów', 'runProductDataAudit')
@@ -67,7 +69,7 @@ function onEdit(event) {
     const name = normalizeText(sheet.getName());
     if (
       name === normalizeText(CONFIG.SHEETS.DICTIONARY) ||
-      (name === normalizeText(CONFIG.SHEETS.INVENTORY) && range.getColumn() === 1)
+      (isConfiguredSheetName_(sheet.getName(), CONFIG.SHEETS.INVENTORY) && range.getColumn() === 1)
     ) {
       invalidateProductCatalogCache_();
     }
@@ -103,7 +105,7 @@ function showSettings() {
 
 function activateSheetByName_(sheetName) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = spreadsheet.getSheetByName(sheetName);
+  const sheet = getSheetByConfiguredName_(sheetName);
 
   if (!sheet) {
     const message = 'Nie znaleziono arkusza: ' + sheetName;

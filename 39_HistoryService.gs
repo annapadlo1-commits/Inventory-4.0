@@ -15,14 +15,14 @@ function getOrCreateTechnicalHistorySheet_() {
   return sheet;
 }
 
-function appendImportHistory_(importId, results) {
+function appendImportHistory_(importId, results, sourceSheetName) {
   if (!Array.isArray(results) || !results.length) return;
   const tech = getOrCreateTechnicalHistorySheet_();
   const timestamp = new Date();
   const user = getCurrentUserEmail_();
   const rows = results.map(result => [
     importId,timestamp,user,result.originalInput||'',result.product||'',result.addedValue??'',
-    result.location||'',CONFIG.SHEETS.INVENTORY,result.row||'',result.column||'',
+    result.location||'',sourceSheetName||CONFIG.SHEETS.INVENTORY,result.row||'',result.column||'',
     result.previousValue??'',result.newValue??'',result.saved?'SAVED':'SKIPPED','','',CONFIG.VERSION,
     result.duplicateCount||1,
     Array.isArray(result.duplicateValues)?result.duplicateValues.join(' + '):'',
@@ -31,7 +31,7 @@ function appendImportHistory_(importId, results) {
     result.qualityLevel||''
   ]);
   tech.getRange(tech.getLastRow()+1,1,rows.length,rows[0].length).setValues(rows);
-  appendApplicationEvent_('IMPORT','Zapisano import: '+results.filter(r=>r.saved).length+' pozycji',{eventId:importId,itemsCount:results.filter(r=>r.saved).length,sourceSheetName:CONFIG.SHEETS.INVENTORY});
+  appendApplicationEvent_('IMPORT','Zapisano import: '+results.filter(r=>r.saved).length+' pozycji',{eventId:importId,itemsCount:results.filter(r=>r.saved).length,sourceSheetName:sourceSheetName||CONFIG.SHEETS.INVENTORY});
 }
 
 function getLastActiveImportId_() {

@@ -15,16 +15,15 @@ function showFinalReview() {
 }
 
 function getFinalReviewSources() {
-  const inventoryKey = normalizeText(CONFIG.SHEETS.INVENTORY);
   const sources = SpreadsheetApp.getActiveSpreadsheet().getSheets()
     .map(sheet => sheet.getName())
     .filter(name => {
       const normalized = normalizeText(name);
-      return normalized === inventoryKey || /^ARCHIWUM\b/i.test(name);
+      return isConfiguredSheetName_(name, CONFIG.SHEETS.INVENTORY) || /^ARCHIWUM\b/i.test(name);
     })
     .map(name => ({
       name: name,
-      current: normalizeText(name) === inventoryKey
+      current: isConfiguredSheetName_(name, CONFIG.SHEETS.INVENTORY)
     }));
 
   sources.sort((a, b) => {
@@ -50,7 +49,7 @@ function getFinalReviewData(sourceSheetName) {
   return {
     version: CONFIG.VERSION,
     sourceSheetName: selectedSheet,
-    isCurrentInventory: normalizeText(selectedSheet) === normalizeText(CONFIG.SHEETS.INVENTORY),
+    isCurrentInventory: isConfiguredSheetName_(selectedSheet, CONFIG.SHEETS.INVENTORY),
     sessionId: session.id,
     startedAt: session.startedAt,
     generatedAt: new Date().toISOString(),
@@ -68,7 +67,7 @@ function applyFinalReviewCorrections(corrections, sourceSheetName) {
   }
 
   const selectedSheet = resolveFinalReviewSheetName_(sourceSheetName);
-  if (normalizeText(selectedSheet) !== normalizeText(CONFIG.SHEETS.INVENTORY)) {
+  if (!isConfiguredSheetName_(selectedSheet, CONFIG.SHEETS.INVENTORY)) {
     throw new Error('Archiwalna inwentaryzacja jest tylko do odczytu.');
   }
   const sheet = getSheetByConfiguredName_(CONFIG.SHEETS.INVENTORY);
@@ -80,41 +79,102 @@ function applyFinalReviewCorrections(corrections, sourceSheetName) {
     const cells = buildEditableReviewCells_(item);
     Object.keys(cells).forEach(label => {
       const a1 = String(cells[label] || '').trim().toUpperCase();
-      if (a1) allowedCells[a1] = true;
+      if (!a1) return;
+      allowedCells[a1] = {
+        product: item.product,
+        productType: String(item.type || '').toUpperCase(),
+        label: label
+      };
     });
   });
 
+  const seen = {};
   const prepared = corrections.map(correction => {
     const a1 = String(correction.a1 || '').trim().toUpperCase();
-    if (!/^[A-Z]+\d+$/.test(a1) || !allowedCells[a1]) {
+    const allowed = allowedCells[a1];
+    if (!/^[A-Z]+\d+$/.test(a1) || !allowed) {
       throw new Error('Komórka ' + (a1 || 'BRAK') + ' nie jest polem edytowalnym końcowego przeglądu.');
+    }
+    if (seen[a1]) throw new Error('Komórka ' + a1 + ' występuje w korektach więcej niż raz.');
+    seen[a1] = true;
+
+    const column = (a1.match(/^[A-Z]+/) || [''])[0];
+    if (
+      isFormulaColumnForProductType_(allowed.productType, column) ||
+      !isAllowedInputColumnForProductType_(allowed.productType, column)
+    ) {
+      throw new Error(
+        'Korekta ' + a1 + ' została zablokowana: kolumna ' + column +
+        ' nie jest polem wejściowym typu ' + allowed.productType + '.'
+      );
     }
 
     const raw = correction.value;
     if (raw === '' || raw === null || raw === undefined) {
-      return { a1: a1, blank: true, value: '' };
+      return {
+        a1: a1, blank: true, value: '', product: allowed.product,
+        productType: allowed.productType
+      };
     }
 
     const value = Number(String(raw).replace(',', '.'));
     if (!Number.isFinite(value) || value < 0) {
       throw new Error('Nieprawidłowa wartość dla komórki ' + a1 + '.');
     }
-    return { a1: a1, blank: false, value: value };
+    return {
+      a1: a1, blank: false, value: value, product: allowed.product,
+      productType: allowed.productType
+    };
   });
 
   const snapshots = prepared.map(item => {
     const range = sheet.getRange(item.a1);
-    return { range: range, value: range.getValue() };
+    const formula = range.getFormula();
+    if (formula) {
+      throw new Error('Korekta zablokowana: komórka ' + item.a1 + ' zawiera formułę.');
+    }
+    return {
+      range: range,
+      a1: item.a1,
+      value: range.getValue(),
+      formula: formula,
+      intendedValue: item.blank ? '' : item.value
+    };
   });
+
   try {
-    prepared.forEach(item => {
-      const range = sheet.getRange(item.a1);
-      if (item.blank) range.clearContent();
-      else range.setValue(item.value);
+    prepared.forEach((item, index) => {
+      const snapshotItem = snapshots[index];
+      const liveFormula = snapshotItem.range.getFormula();
+      const liveValue = snapshotItem.range.getValue();
+      if (liveFormula || !inventoryCellValuesEqual_(liveValue, snapshotItem.value)) {
+        throw new Error(
+          'Komórka ' + item.a1 + ' została zmieniona równolegle. Korekty przerwano.'
+        );
+      }
+      if (item.blank) snapshotItem.range.clearContent();
+      else snapshotItem.range.setValue(item.value);
     });
     SpreadsheetApp.flush();
   } catch (error) {
-    snapshots.forEach(snapshot => snapshot.range.setValue(snapshot.value));
+    snapshots.slice().reverse().forEach(snapshotItem => {
+      const liveValue = snapshotItem.range.getValue();
+      const liveFormula = snapshotItem.range.getFormula();
+      if (!liveFormula && inventoryCellValuesEqual_(liveValue, snapshotItem.intendedValue)) {
+        if (snapshotItem.value === '' || snapshotItem.value === null || snapshotItem.value === undefined) {
+          snapshotItem.range.clearContent();
+        } else {
+          snapshotItem.range.setValue(snapshotItem.value);
+        }
+      } else if (!inventoryCellValuesEqual_(liveValue, snapshotItem.value)) {
+        logWarning(
+          'FinalReviewExport',
+          'applyFinalReviewCorrections.rollback',
+          'Nie cofnięto komórki zmienionej równolegle.',
+          { cell: snapshotItem.a1, liveValue: liveValue }
+        );
+      }
+    });
     SpreadsheetApp.flush();
     throw error;
   }
@@ -128,7 +188,7 @@ function finalizeInventoryAndExport(options) {
   try {
     const data = options || {};
     const sourceSheetName = resolveFinalReviewSheetName_(data.sourceSheetName);
-    const isCurrentInventory = normalizeText(sourceSheetName) === normalizeText(CONFIG.SHEETS.INVENTORY);
+    const isCurrentInventory = isConfiguredSheetName_(sourceSheetName, CONFIG.SHEETS.INVENTORY);
     const corrections = Array.isArray(data.corrections) ? data.corrections : [];
     if (corrections.length) applyFinalReviewCorrections(corrections, sourceSheetName);
 
@@ -213,18 +273,19 @@ function buildFinalInventorySnapshot_(sourceSheetName) {
 function buildLegacyReviewValues_(summaryItem) {
   const details = summaryItem.details || {};
   if (summaryItem.type === CONFIG.PRODUCT_TYPES.LOCATION) {
-    return {
-      Magazyn: normalizeReportNumber_(details.warehouse),
-      Darkroom: normalizeReportNumber_(details.darkroom),
-      'Lodówki': normalizeReportNumber_(details.fridges),
-      'Stan końcowy': normalizeReportNumber_(summaryItem.finalTotal)
-    };
+    const values = {};
+    getLocationAreaDefinitions_().forEach(area => {
+      values[area.label] = normalizeReportNumber_(details[area.columnKey]);
+    });
+    values['Stan końcowy'] = normalizeReportNumber_(summaryItem.finalTotal);
+    return values;
   }
   if (summaryItem.type === CONFIG.PRODUCT_TYPES.KEG) {
     return {
       'Waga brutto': normalizeReportNumber_(details.grossWeight),
       'Waga pustego kega': normalizeReportNumber_(details.emptyContainerWeight),
       'Otwarty keg netto': normalizeReportNumber_(details.openNet),
+      'PREP netto': normalizeReportNumber_(details.prepNet),
       'Pełne kegi': normalizeReportNumber_(details.fullUnits),
       'Pojemność kega': normalizeReportNumber_(details.unitCapacity),
       'Pełne kegi w l': normalizeReportNumber_(details.fullUnitsVolume),
@@ -246,11 +307,12 @@ function buildLegacyReviewValues_(summaryItem) {
 function buildEditableReviewCells_(summaryItem) {
   const cells = summaryItem.cells || {};
   if (summaryItem.type === CONFIG.PRODUCT_TYPES.LOCATION) {
-    return {
-      Magazyn: cells.warehouse,
-      Darkroom: cells.darkroom,
-      'Lodówki': cells.fridges
-    };
+    const editable = {};
+    getLocationAreaDefinitions_().forEach(area => {
+      const a1 = cells[area.columnKey];
+      if (a1) editable[area.label] = a1;
+    });
+    return editable;
   }
   if (summaryItem.type === CONFIG.PRODUCT_TYPES.KEG) {
     return {
@@ -267,8 +329,8 @@ function buildEditableReviewCells_(summaryItem) {
 function applySummaryWarnings_(item, settings) {
   const details = item.details || {};
   if (item.type === CONFIG.PRODUCT_TYPES.LOCATION) {
-    ['warehouse', 'darkroom', 'fridges'].forEach(key => {
-      const value = details[key];
+    getLocationAreaDefinitions_().forEach(area => {
+      const value = details[area.columnKey];
       if (value !== '' && Number(value) > settings.locationWarning) item.flags.push('DUŻA ILOŚĆ');
     });
   } else if (item.type === CONFIG.PRODUCT_TYPES.KEG) {
@@ -354,7 +416,19 @@ function buildExportFinalSummarySheet_(sheet, items) {
 }
 
 function buildExportNormalDetailsSheet_(sheet, items) {
-  const headers = ['Kategoria', 'Produkt', 'Waga brutto C', 'Waga pustej butelki D', 'Otwarta zawartość E', 'PREP netto G', 'Pełne sztuki H', 'Pojemność I', 'Pełne butelki w l J', 'Stan końcowy K', 'Jednostka'];
+  const layout = getInventorySummaryLayout_(CONFIG.PRODUCT_TYPES.NORMAL);
+  const headers = [
+    'Kategoria', 'Produkt',
+    'Waga brutto ' + layout.grossWeight,
+    'Waga pustej butelki ' + layout.emptyContainerWeight,
+    'Otwarta zawartość ' + layout.openNet,
+    'PREP netto ' + layout.prepNet,
+    'Pełne sztuki ' + layout.fullUnits,
+    'Pojemność ' + layout.unitCapacity,
+    'Pełne butelki w l ' + layout.fullUnitsVolume,
+    'Stan końcowy ' + layout.finalTotal,
+    'Jednostka'
+  ];
   const rows = items.filter(item => item.type === CONFIG.PRODUCT_TYPES.NORMAL).map(item => {
     const d = item.details || {};
     return [item.category, item.product, d.grossWeight, d.emptyContainerWeight, d.openNet, d.prepNet, d.fullUnits, d.unitCapacity, d.fullUnitsVolume, item.finalTotal, item.unit];
@@ -363,19 +437,37 @@ function buildExportNormalDetailsSheet_(sheet, items) {
 }
 
 function buildExportKegDetailsSheet_(sheet, items) {
-  const headers = ['Kategoria', 'Produkt', 'Waga brutto C', 'Waga pustego kega D', 'Otwarty keg E', 'Pełne kegi G', 'Pojemność kega H', 'Pełne kegi w l I', 'Stan końcowy J', 'Jednostka'];
+  const layout = getInventorySummaryLayout_(CONFIG.PRODUCT_TYPES.KEG);
+  const headers = [
+    'Kategoria', 'Produkt',
+    'Waga brutto ' + layout.grossWeight,
+    'Waga pustego kega ' + layout.emptyContainerWeight,
+    'Otwarty keg ' + layout.openNet,
+    'PREP netto ' + layout.prepNet,
+    'Pełne kegi ' + layout.fullUnits,
+    'Pojemność kega ' + layout.unitCapacity,
+    'Pełne kegi w l ' + layout.fullUnitsVolume,
+    'Stan końcowy ' + layout.finalTotal,
+    'Jednostka'
+  ];
   const rows = items.filter(item => item.type === CONFIG.PRODUCT_TYPES.KEG).map(item => {
     const d = item.details || {};
-    return [item.category, item.product, d.grossWeight, d.emptyContainerWeight, d.openNet, d.fullUnits, d.unitCapacity, d.fullUnitsVolume, item.finalTotal, item.unit];
+    return [item.category, item.product, d.grossWeight, d.emptyContainerWeight, d.openNet, d.prepNet, d.fullUnits, d.unitCapacity, d.fullUnitsVolume, item.finalTotal, item.unit];
   });
   writeExportTable_(sheet, headers, rows, '#cfe2f3');
 }
 
 function buildExportLocationDetailsSheet_(sheet, items) {
-  const headers = ['Kategoria', 'Produkt', 'Magazyn B', 'Darkroom C', 'Lodówki D', 'Stan końcowy E', 'Jednostka'];
+  const layout = getInventorySummaryLayout_(CONFIG.PRODUCT_TYPES.LOCATION);
+  const areas = getLocationAreaDefinitions_();
+  const headers = ['Kategoria', 'Produkt'].concat(
+    areas.map(area => area.label + ' ' + String(layout[area.columnKey] || '')),
+    ['Stan końcowy ' + layout.finalTotal, 'Jednostka']
+  );
   const rows = items.filter(item => item.type === CONFIG.PRODUCT_TYPES.LOCATION).map(item => {
     const d = item.details || {};
-    return [item.category, item.product, d.warehouse, d.darkroom, d.fridges, item.finalTotal, item.unit];
+    return [item.category, item.product]
+      .concat(areas.map(area => d[area.columnKey]), [item.finalTotal, item.unit]);
   });
   writeExportTable_(sheet, headers, rows, '#d9ead3');
 }
@@ -511,15 +603,14 @@ function closeActiveInventorySession_(exportId) {
 function resolveFinalReviewSheetName_(requestedName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const requested = String(requestedName || CONFIG.SHEETS.INVENTORY).trim();
-  const requestedKey = normalizeText(requested);
-  const inventoryKey = normalizeText(CONFIG.SHEETS.INVENTORY);
 
-  if (!requested || requestedKey === inventoryKey) {
+  if (!requested || isConfiguredSheetName_(requested, CONFIG.SHEETS.INVENTORY)) {
     const inventorySheet = getSheetByConfiguredName_(CONFIG.SHEETS.INVENTORY);
     if (!inventorySheet) throw new Error('Nie znaleziono bieżącego arkusza INWENTURA.');
     return inventorySheet.getName();
   }
 
+  const requestedKey = normalizeText(requested);
   const sheet = ss.getSheets().find(item => normalizeText(item.getName()) === requestedKey);
   if (!sheet) throw new Error('Nie znaleziono arkusza: ' + requested + '.');
   return sheet.getName();

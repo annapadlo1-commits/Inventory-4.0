@@ -902,41 +902,31 @@ function isConnectorWord_(value) {
 }
 
 function readLocationAt_(tokens, position) {
-  const one = normalizeWordForParser_(
-    tokens[position] || ''
-  );
+  const source = Array.isArray(tokens) ? tokens : [];
+  const definitions = getLocationAreaDefinitions_();
+  let best = null;
 
-  const two = normalizeWordForParser_(
-    [tokens[position], tokens[position + 1]]
-      .filter(Boolean)
-      .join(' ')
-  );
+  definitions.forEach(area => {
+    const candidates = [area.key, area.label].concat(area.aliases || []);
+    candidates.forEach(candidate => {
+      const normalized = normalizeWordForParser_(candidate || '');
+      if (!normalized) return;
+      const consumed = normalized.split(/\s+/).filter(Boolean).length;
+      const phraseTokens = source
+        .slice(position, position + consumed)
+        .filter(token => token !== null && token !== undefined && String(token).trim() !== '');
 
-  if (two === 'dark room') {
-    return {
-      location: 'darkroom',
-      consumed: 2
-    };
-  }
+      // Nie wolno uznać jednoelementowego końca wiersza za dwuwyrazowy alias.
+      if (phraseTokens.length !== consumed) return;
+      const phrase = normalizeWordForParser_(phraseTokens.join(' '));
+      if (phrase !== normalized) return;
+      if (!best || consumed > best.consumed) {
+        best = { location: area.key, consumed: consumed };
+      }
+    });
+  });
 
-  const locations = {
-    magazyn: 'magazyn',
-    warehouse: 'magazyn',
-    darkroom: 'darkroom',
-    lodowki: 'lodowki',
-    lodowka: 'lodowki',
-    fridge: 'lodowki',
-    fridges: 'lodowki'
-  };
-
-  if (locations[one]) {
-    return {
-      location: locations[one],
-      consumed: 1
-    };
-  }
-
-  return null;
+  return best;
 }
 
 function readNumberAt_(tokens, position) {

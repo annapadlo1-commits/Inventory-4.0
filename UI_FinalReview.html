@@ -59,12 +59,14 @@
   </div>
 </div>
 <script>
+const CURRENT_INVENTORY_SHEET = <?!= JSON.stringify(CONFIG.SHEETS.INVENTORY) ?>;
+const LOCATION_REVIEW_ORDER = <?!= JSON.stringify(getLocationUiOptions_().map(function(item) { return item.label; })) ?>;
 let data=null; const edits={};
 function formatValue(v){const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat('pl-PL',{maximumFractionDigits:3}).format(n):v;}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function load(){google.script.run.withSuccessHandler(setSources).withFailureHandler(showError).getFinalReviewSources();}
 function setSources(sources){const sel=document.getElementById('sourceSheet');const previous=sel.value;sel.innerHTML=sources.map(s=>`<option value="${esc(s.name)}">${esc(s.name)}${s.current?' — bieżąca':''}</option>`).join('');if(previous&&sources.some(s=>s.name===previous))sel.value=previous;loadSelected();}
-function loadSelected(){const name=document.getElementById('sourceSheet').value||'Inwentura';google.script.run.withSuccessHandler(setData).withFailureHandler(showError).getFinalReviewData(name);}
+function loadSelected(){const name=document.getElementById('sourceSheet').value||CURRENT_INVENTORY_SHEET;google.script.run.withSuccessHandler(setData).withFailureHandler(showError).getFinalReviewData(name);}
 function changeSource(){Object.keys(edits).forEach(k=>delete edits[k]);document.getElementById('loading').hidden=false;document.getElementById('app').hidden=true;loadSelected();}
 function reloadData(){Object.keys(edits).forEach(k=>delete edits[k]);document.getElementById('loading').hidden=false;document.getElementById('app').hidden=true;loadSelected();}
 function setData(result){data=result;document.getElementById('loading').hidden=true;document.getElementById('app').hidden=false;document.getElementById('products').textContent=result.summary.products;document.getElementById('completed').textContent=result.summary.completed;document.getElementById('missing').textContent=result.summary.missing;document.getElementById('warnings').textContent=result.summary.warningProducts;document.getElementById('newProducts').textContent=result.newProducts.length;document.getElementById('saveCorrections').disabled=true;document.getElementById('saveCorrections').style.display=result.isCurrentInventory?'inline-block':'none';document.getElementById('editHint').classList.toggle('show',result.isCurrentInventory);document.getElementById('exportBtn').textContent=result.isCurrentInventory?'Zakończ i eksportuj XLSX + PDF':'Generuj ponownie XLSX + PDF';renderRows();}
@@ -80,7 +82,7 @@ function renderRows(){
     const tr=document.createElement('tr');
     tr.className=item.flags.includes('BRAK WARTOŚCI')?'missing':(item.flags.length?'flagged':'');
     const editable=item.cells||{};
-    const valueOrder=item.type==='LOCATION'?['Magazyn','Lodówki','Darkroom','Stan końcowy']:(item.type==='KEG'?['Waga brutto','Waga pustego kega','Otwarty keg netto','Pełne kegi','Pojemność kega','Pełne kegi w l','Stan końcowy']:['Waga brutto','Waga pustej butelki','Otwarta zawartość netto','PREP netto','Pełne butelki','Pojemność butelki','Pełne butelki w l','Stan końcowy']);
+    const valueOrder=item.type==='LOCATION'?LOCATION_REVIEW_ORDER.concat(['Stan końcowy']):(item.type==='KEG'?['Waga brutto','Waga pustego kega','Otwarty keg netto','Pełne kegi','Pojemność kega','Pełne kegi w l','Stan końcowy']:['Waga brutto','Waga pustej butelki','Otwarta zawartość netto','PREP netto','Pełne butelki','Pojemność butelki','Pełne butelki w l','Stan końcowy']);
     const vals=valueOrder.filter(label=>Object.prototype.hasOwnProperty.call(item.values,label)).map(label=>{
       const a1=editable[label];
       const value=a1&&edits[a1]!==undefined?edits[a1]:item.values[label];

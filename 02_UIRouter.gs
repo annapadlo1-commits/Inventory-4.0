@@ -14,10 +14,6 @@ function includeInventoryHelp_() {
   return HtmlService.createHtmlOutputFromFile('UI_Help').getContent();
 }
 
-function includeInventoryAboutLogo_() {
-  return HtmlService.createHtmlOutputFromFile('UI_AboutLogoData').getContent().trim();
-}
-
 function showImport() {
   const html = renderInventoryTemplate_('UI_Import')
     .setWidth(1320)

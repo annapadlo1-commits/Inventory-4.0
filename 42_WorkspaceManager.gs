@@ -56,8 +56,6 @@ function applyWorkspaceVisibility_(mode) {
     }
   });
 
-  [CONFIG.SHEETS.INVENTORY].forEach(name => {
-    const sheet = ss.getSheetByName(name);
-    if (sheet && sheet.isSheetHidden()) sheet.showSheet();
-  });
+  const inventory = getSheetByConfiguredName_(CONFIG.SHEETS.INVENTORY);
+  if (inventory && inventory.isSheetHidden()) inventory.showSheet();
 }

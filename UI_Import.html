@@ -275,7 +275,7 @@
 
     <textarea
       id="inventoryText"
-      placeholder="Jameson 3, Campari 0,52, magazyn Fritz Kola 2"
+      placeholder="Jameson 3, Campari 0,52, bar Bombilla 2"
     ></textarea>
 
     <div id="summary" class="summary"></div>
@@ -386,7 +386,7 @@
         <div class="form-field full"><label for="smartReviewSource">Tekst wpisu</label><textarea id="smartReviewSource" class="smart-review-source"></textarea><div class="smart-review-hint">Dla produktu zero wpisz np. „lodówki fritz kola zero 4”.</div></div>
         <div class="form-field full"><label for="smartReviewProduct">Produkt</label><select id="smartReviewProduct"><option value="">-- wybierz istniejący produkt --</option></select></div>
         <div class="form-field"><label for="smartReviewValue">Wartość</label><input id="smartReviewValue" type="number" step="any"></div>
-        <div class="form-field"><label for="smartReviewLocation">Lokalizacja</label><select id="smartReviewLocation"><option value="">-- brak --</option><option value="magazyn">Magazyn</option><option value="darkroom">Darkroom</option><option value="lodowki">Lodówki</option></select></div>
+        <div class="form-field"><label for="smartReviewLocation">Lokalizacja</label><select id="smartReviewLocation"><option value="">-- brak --</option><?!= renderLocationOptionsHtml_(); ?></select></div>
         <div class="form-field full"><label><input id="smartReviewRemember" type="checkbox"> Zapamiętaj poprawione dopasowanie jako alias przy zapisie importu</label></div>
       </div>
       <div id="smartReviewError" class="modal-error"></div>
@@ -399,6 +399,8 @@
   </div>
 
   <script>
+    const LOCATION_OPTIONS = <?!= JSON.stringify(getLocationUiOptions_()) ?>;
+    const LOCATION_PREFIXES = <?!= JSON.stringify(getLocationAreaDefinitions_().reduce(function(all, area) { return all.concat([area.key, area.label], area.aliases || []); }, [])) ?>;
     let previewItems = [];
     let qualitySettings = {};
     let activeReviewFilter = 'all';
@@ -1066,18 +1068,10 @@
         'select'
       );
 
-      [
-        ['', '-- wybierz --'],
-        ['magazyn', 'Magazyn'],
-        ['darkroom', 'Darkroom'],
-        ['lodowki', 'Lodowki']
-      ].forEach(data => {
-        const option = document.createElement(
-          'option'
-        );
-
-        option.value = data[0];
-        option.textContent = data[1];
+      [{ value: '', label: '-- wybierz --' }].concat(LOCATION_OPTIONS).forEach(data => {
+        const option = document.createElement('option');
+        option.value = data.value;
+        option.textContent = data.label;
         select.appendChild(option);
       });
 
@@ -1553,10 +1547,16 @@
     let newProductResolverData = null;
 
     function proposedNewProductName_(item) {
-      return String(item.parsedProduct || item.originalInput || '')
-        .replace(/^\s*(magazyn|darkroom|lodowki|lodówki)\s+/i, '')
-        .replace(/\s+[-+]?\d+(?:[.,]\d+)?\s*$/i, '')
-        .trim();
+      const escapedPrefixes = LOCATION_PREFIXES
+        .filter(Boolean)
+        .sort((a, b) => b.length - a.length)
+        .map(value => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      const prefixPattern = escapedPrefixes.length
+        ? new RegExp('^\\s*(?:' + escapedPrefixes.join('|') + ')\\s+', 'i')
+        : null;
+      let value = String(item.parsedProduct || item.originalInput || '');
+      if (prefixPattern) value = value.replace(prefixPattern, '');
+      return value.replace(/\s+[-+]?\d+(?:[.,]\d+)?\s*$/i, '').trim();
     }
 
     function openNewProductModal(index) {

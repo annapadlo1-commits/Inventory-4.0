@@ -16,8 +16,12 @@ function collectAliasSuggestions_(items) {
 }
 
 function normalizeAliasCandidate_(value) {
-  return String(value || '')
-    .replace(/^\s*(?:magazyn|warehouse|dark\s*room|darkroom|lod[oó]wki?|fridges?)\s+/i, '')
+  const prepared = prepareParserText_(value || '');
+  const tokens = prepared.split(/\s+/).filter(Boolean);
+  const location = readLocationAt_(tokens, 0);
+  const withoutLocation = location ? tokens.slice(location.consumed) : tokens;
+
+  return withoutLocation.join(' ')
     .replace(/\s+(?:i|oraz|potem|dalej|nast[eę]pnie)\s*$/i, '')
     .replace(/\s+[-+]?\d+(?:[.,]\d+)?\s*$/i, '')
     .replace(/\s+/g, ' ')
