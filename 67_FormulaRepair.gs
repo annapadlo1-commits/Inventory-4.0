@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.2 — bezpieczna odbudowa formuł PAWILONÓW.
+ * Inventory PRO 4.3.3 — bezpieczna odbudowa formuł PAWILONÓW.
  *
  * Naprawa nie nadpisuje konfliktowych wartości. Komórki puste, spłaszczone
  * z wynikiem zgodnym z obliczeniem oraz błędne formuły mogą zostać naprawione

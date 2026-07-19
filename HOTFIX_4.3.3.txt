@@ -1,0 +1,1 @@
+Naprawa: formuły SUM nie używają separatorów argumentów ani niepoprawnej notacji R1C1 w arkuszu pl_PL.

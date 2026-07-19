@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.2
+ * Inventory PRO 4.3.3
  * Konfiguracja PAWILONÓW z release gate dla kontraktu formuł.
  */
 function enterpriseSetup() {

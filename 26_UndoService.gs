@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.2 — konfliktowe cofanie importu.
+ * Inventory PRO 4.3.3 — konfliktowe cofanie importu.
  * Ręczne zmiany wykonane po imporcie nie są nadpisywane.
  */
 

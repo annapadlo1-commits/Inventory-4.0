@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.2 — automatyczna konfiguracja produktów PAWILONÓW.
+ * Inventory PRO 4.3.3 — automatyczna konfiguracja produktów PAWILONÓW.
  * Mapowanie kolumn jest odczytywane z fizycznych nagłówków arkusza,
  * a CONFIG.INVENTORY_LAYOUT pozostaje bezpiecznym fallbackiem.
  */

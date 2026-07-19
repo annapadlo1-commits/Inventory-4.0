@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.2
+ * Inventory PRO 4.3.3
  * Odporne wyszukiwanie arkuszy po nazwie i aliasach konfiguracji.
  */
 

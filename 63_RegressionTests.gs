@@ -1009,7 +1009,7 @@ function testLongestMatchZeroRC34_() {
 function ip34Assert_(condition, message) {
   if (!condition) throw new Error(message || 'Assertion failed');
 }
-/** Inventory PRO 4.3.2 — kontrakt układu i bezpieczeństwa PAWILONÓW. */
+/** Inventory PRO 4.3.3 — kontrakt układu i bezpieczeństwa PAWILONÓW. */
 function testPawilonyLayoutContract432_() {
   const normal = getInventorySummaryLayout_(CONFIG.PRODUCT_TYPES.NORMAL);
   const keg = getInventorySummaryLayout_(CONFIG.PRODUCT_TYPES.KEG);

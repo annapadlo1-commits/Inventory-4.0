@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.2 — bezpieczny, selektywny zapis PAWILONÓW.
+ * Inventory PRO 4.3.3 — bezpieczny, selektywny zapis PAWILONÓW.
  * Odczyt buforów służy wyłącznie do obliczania sum, a zapis obejmuje tylko
  * konkretne komórki wejściowe. Kolumny formuł są chronione kontraktem typu.
  */
