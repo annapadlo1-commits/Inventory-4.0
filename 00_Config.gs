@@ -1,13 +1,13 @@
 const CONFIG = Object.freeze({
   EDITION: 'Production Edition',
-  RELEASE_CHANNEL: 'STABLE',
+  RELEASE_CHANNEL: 'RECOVERY',
   LOCATION: Object.freeze({
     ID: 'PAWILONY',
     NAME: 'PAWILONY',
     NUMBER: 1,
     NEXT_LOCATION: 'KRUCZA'
   }),
-  VERSION: '4.3.3-PAWILONY',
+  VERSION: '4.3.5-RECOVERY-PAWILONY',
 
   SHEETS: Object.freeze({
     INVENTORY: 'INWENTURA',
