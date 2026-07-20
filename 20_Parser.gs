@@ -84,11 +84,12 @@ function parseInventoryTextContinuous_(inputText, runtimeContext) {
     );
 
     if (dictionaryEntry) {
+      const effectiveLocation = dictionaryEntry.location || currentLocation;
       results.push({
-        originalInput: [currentLocation, dictionaryEntry.originalInput].filter(Boolean).join(' '),
+        originalInput: [effectiveLocation, dictionaryEntry.originalInput].filter(Boolean).join(' '),
         product: dictionaryEntry.product,
         value: dictionaryEntry.value,
-        location: currentLocation,
+        location: effectiveLocation,
         status: dictionaryEntry.value === null ? 'ERROR' : 'OK',
         message: dictionaryEntry.value === null ? 'Nie znaleziono ilosci' : 'Rozpoznano dictionary-first'
       });
@@ -223,14 +224,16 @@ function findDictionaryFirstInventoryEntryAt_(tokens, startPosition, context) {
 
   const span = findLongestExactCatalogSpanAt_(tokens, startPosition, context);
   if (!span) return null;
-  const number = readNumberAt_(tokens, span.endPosition);
+  const explicitLocation = readLocationAt_(tokens, span.endPosition);
+  const numberPosition = span.endPosition + (explicitLocation ? explicitLocation.consumed : 0);
+  const number = readNumberAt_(tokens, numberPosition);
   // Nie zatwierdzamy krótszej nazwy bez wartości, jeżeli po niej pozostaje
   // dalsza część wpisu. Przykład krytyczny:
   //   magazyn Inne beczki Pilsner 2
   // Katalog może zawierać także krótszą pozycję „Inne Beczki”. Wcześniej
   // parser emitował ją jako błąd, a „Pilsner 2” przypisywał do innego
   // pilsnera. Cały fragment musi przejść przez bezpieczną ocenę granicy.
-  if (!number && span.endPosition < tokens.length) {
+  if (!number && numberPosition < tokens.length) {
     return null;
   }
   if (
@@ -240,10 +243,11 @@ function findDictionaryFirstInventoryEntryAt_(tokens, startPosition, context) {
     return null;
   }
   return {
-    originalInput: tokens.slice(startPosition, number ? span.endPosition + number.consumed : span.endPosition).join(' '),
+    originalInput: tokens.slice(startPosition, number ? numberPosition + number.consumed : numberPosition).join(' '),
     product: span.product.name,
     value: number ? number.value : null,
-    nextPosition: number ? span.endPosition + number.consumed : span.endPosition
+    nextPosition: number ? numberPosition + number.consumed : numberPosition,
+    location: explicitLocation ? explicitLocation.location : ''
   };
 }
 

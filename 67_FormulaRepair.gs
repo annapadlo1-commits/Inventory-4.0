@@ -207,7 +207,7 @@ function formatFormulaConflictCells_(audit, limit) {
 
 function repairInventoryFormulas_(options) {
   throw new Error(
-    'Automatyczna naprawa formuł jest wyłączona w wersji 4.3.6 SAFE MODE. ' +
+    'Automatyczna naprawa formuł jest wyłączona w wersji 4.3.7 SAFE MODE. ' +
     'Funkcja nie wykonała żadnego zapisu.'
   );
   const settings = options || {};
@@ -342,7 +342,7 @@ function repairInventoryFormulasWithDialog() {
   const ui = SpreadsheetApp.getUi();
   ui.alert(
     'Inventory PRO — naprawa formuł wyłączona',
-    'Automatyczna naprawa formuł jest wyłączona w wersji 4.3.6 SAFE MODE. ' +
+    'Automatyczna naprawa formuł jest wyłączona w wersji 4.3.7 SAFE MODE. ' +
       'Nie wykonano żadnego zapisu.',
     ui.ButtonSet.OK
   );
