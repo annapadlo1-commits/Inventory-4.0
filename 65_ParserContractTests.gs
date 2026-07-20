@@ -18,7 +18,8 @@ function runParserContractTests() {
     parserContractValueAfterProduct_,
     parserContractNoCrossLineLeakage_,
     parserContractNumericVariant_,
-    parserContractLocationSection_
+    parserContractLocationSection_,
+    parserContractQuantityUnitSuffix_
   ];
 
   const results = tests.map(function(testFunction) {
@@ -200,6 +201,26 @@ function parserContractLocationSection_() {
     [{ product: 'BOMBILLA 0,3L', value: 12, location: 'magazyn' }],
     'Sekcja lokalizacji'
   );
+}
+
+function parserContractQuantityUnitSuffix_() {
+  const context = createParserTestContext_([
+    'Fritz 200ml KOLA BEZ CUKRU',
+    'BOMBILLA 0,3L'
+  ]);
+  context.catalog[0].aliases = ['kola zero'];
+  context.parserPhraseIndex = null;
+
+  ['sztuk', 'sztuki', 'sztuka', 'szt.'].forEach(function(unit) {
+    assertParserContract_(
+      parseInventoryText('kola zero 7 ' + unit + ' bombilla 2', context),
+      [
+        { product: 'Fritz 200ml KOLA BEZ CUKRU', value: 7 },
+        { product: 'BOMBILLA 0,3L', value: 2 }
+      ],
+      'Jednostka po liczbie: ' + unit
+    );
+  });
 }
 
 function assertParserContract_(actual, expected, label) {
