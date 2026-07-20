@@ -1,1 +1,3 @@
-4.3.3-PAWILONY
+Inventory PRO PAWILONY 4.3.5-RECOVERY
+Base: 4.3.2
+Purpose: recovery after SLOWNIK contamination

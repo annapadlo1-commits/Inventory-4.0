@@ -13,8 +13,44 @@ function getDictionarySheet_() {
   return sheet;
 }
 
+function detectDictionaryCodeContamination_(sheet) {
+  const target = sheet || getDictionarySheet_();
+  const lastRow = target.getLastRow();
+  if (lastRow < 2) return [];
+  const values = target.getRange(2, 2, lastRow - 1, 1).getDisplayValues();
+  const signatures = [
+    /^\s*\/\*\*?/, /^\s*\*\/?\s*$/, /^\s*function\s+[A-Za-z_$]/,
+    /^\s*(const|let|var)\s+[A-Za-z_$]/, /SpreadsheetApp\./,
+    /getRange\s*\(/, /setValues?\s*\(/, /setFormula/,
+    /=>/, /throw\s+new\s+Error/, /return\s+[A-Za-z_$].*\(/,
+    /^\s*[{}][;,]?\s*$/
+  ];
+  const issues = [];
+  values.forEach((row, index) => {
+    const value = String(row[0] || '').trim();
+    if (!value) return;
+    if (signatures.some(pattern => pattern.test(value))) {
+      issues.push({ row: index + 2, value: value });
+    }
+  });
+  return issues;
+}
+
+function assertDictionaryIsSafe_() {
+  const sheet = getDictionarySheet_();
+  const issues = detectDictionaryCodeContamination_(sheet);
+  if (!issues.length) return true;
+  const examples = issues.slice(0, 5).map(item => 'B' + item.row).join(', ');
+  throw new Error(
+    'SLOWNIK jest uszkodzony: wykryto fragmenty kodu w kolumnie B (' +
+    issues.length + ' komórek; przykłady: ' + examples + '). ' +
+    'Import został zatrzymany, aby nie zapisywać błędnych danych.'
+  );
+}
+
 function loadAliases() {
   const sheet = getDictionarySheet_();
+  assertDictionaryIsSafe_();
   const lastRow = sheet.getLastRow();
 
   if (lastRow < 2) {

@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.3 — walidacja konfiguracji, układu i formuł PAWILONÓW.
+ * Inventory PRO 4.3.2 — walidacja konfiguracji, układu i formuł PAWILONÓW.
  */
 
 function validateEnterpriseConfiguration() {

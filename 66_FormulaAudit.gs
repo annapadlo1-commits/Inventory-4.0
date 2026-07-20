@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.3 — audyt kontraktu formuł PAWILONÓW.
+ * Inventory PRO 4.3.2 — audyt kontraktu formuł PAWILONÓW.
  *
  * Audytuje wyłącznie fizyczne wiersze produktów wykryte przez
  * scanInventoryProducts_(). Rozróżnia bezpiecznie spłaszczone wyniki od
@@ -78,7 +78,7 @@ function buildInventoryFormulaContractEntry_(targetColumn, operation, sourceColu
   } else if (operation === 'PRODUCT') {
     formula = '=' + a1Sources[0] + '*' + a1Sources[1];
   } else {
-    formula = buildSeparatorSafeSumFormulaA1_(sources, row);
+    formula = '=SUM(' + a1Sources.join(',') + ')';
   }
 
   const targetNumber = inventoryColumnLetterToNumber_(target);
@@ -91,7 +91,7 @@ function buildInventoryFormulaContractEntry_(targetColumn, operation, sourceColu
   } else if (operation === 'PRODUCT') {
     r1c1 = '=' + r1c1Sources[0] + '*' + r1c1Sources[1];
   } else {
-    r1c1 = buildSeparatorSafeSumFormulaR1C1_(targetNumber, sources);
+    r1c1 = '=SUM(' + r1c1Sources.join(',') + ')';
   }
 
   return {
@@ -102,34 +102,6 @@ function buildInventoryFormulaContractEntry_(targetColumn, operation, sourceColu
     formula: formula,
     r1c1: r1c1
   };
-}
-
-
-function buildSeparatorSafeSumFormulaA1_(sources, row) {
-  const cols = (sources || []).map(normalizeColumnLetter_).filter(Boolean);
-  if (cols.length === 3 && cols.join('|') === 'E|G|J') {
-    return '=SUM(E' + row + ':G' + row + ')+J' + row;
-  }
-  const numbers = cols.map(inventoryColumnLetterToNumber_);
-  const contiguous = numbers.every((value, index) => index === 0 || value === numbers[index - 1] + 1);
-  if (contiguous && cols.length > 1) {
-    return '=SUM(' + cols[0] + row + ':' + cols[cols.length - 1] + row + ')';
-  }
-  return '=' + cols.map(column => column + row).join('+');
-}
-
-function buildSeparatorSafeSumFormulaR1C1_(targetColumnNumber, sources) {
-  const cols = (sources || []).map(normalizeColumnLetter_).filter(Boolean);
-  if (cols.length === 3 && cols.join('|') === 'E|G|J') {
-    return '=SUM(RC[-6]:RC[-4])+RC[-1]';
-  }
-  const numbers = cols.map(inventoryColumnLetterToNumber_);
-  const contiguous = numbers.every((value, index) => index === 0 || value === numbers[index - 1] + 1);
-  const refs = numbers.map(number => buildRelativeR1C1Reference_(targetColumnNumber, number));
-  if (contiguous && refs.length > 1) {
-    return '=SUM(' + refs[0] + ':' + refs[refs.length - 1] + ')';
-  }
-  return '=' + refs.join('+');
 }
 
 function buildRelativeR1C1Reference_(targetColumnNumber, sourceColumnNumber) {

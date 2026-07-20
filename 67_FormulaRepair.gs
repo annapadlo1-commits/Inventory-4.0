@@ -1,12 +1,27 @@
 /**
- * Inventory PRO 4.3.3 — bezpieczna odbudowa formuł PAWILONÓW.
+ * Inventory PRO 4.3.5-RECOVERY — bezpieczna odbudowa formuł PAWILONÓW.
  *
  * Naprawa nie nadpisuje konfliktowych wartości. Komórki puste, spłaszczone
  * z wynikiem zgodnym z obliczeniem oraz błędne formuły mogą zostać naprawione
  * po utworzeniu pełnej kopii zakładki.
  */
 
+
+function assertFormulaRepairTargetIsInventory_(sheet) {
+  if (!sheet) throw new Error('Brak arkusza docelowego naprawy formuł.');
+  const expected = normalizeText(CONFIG.SHEETS.INVENTORY);
+  const actual = normalizeText(sheet.getName());
+  if (actual !== expected) {
+    throw new Error(
+      'BLOKADA BEZPIECZEŃSTWA: naprawa formuł może modyfikować wyłącznie arkusz ' +
+      CONFIG.SHEETS.INVENTORY + '. Otrzymano: ' + sheet.getName() + '.'
+    );
+  }
+  return true;
+}
+
 function buildInventoryFormulaRepairPlan_(sheet, products, audit) {
+  assertFormulaRepairTargetIsInventory_(sheet);
   const formulaAudit = audit || buildInventoryFormulaAudit_(sheet, products || []);
   const values = sheet.getRange(
     1, 1, Math.max(sheet.getLastRow(), 1), Math.max(getInventoryLayoutMaxColumn_(), 1)
@@ -82,6 +97,7 @@ function buildFormulaRepairSegments_(plan) {
 }
 
 function createFormulaRepairBackupSheet_(sheet) {
+  assertFormulaRepairTargetIsInventory_(sheet);
   const spreadsheet = sheet.getParent();
   const timestamp = Utilities.formatDate(
     new Date(),
@@ -101,6 +117,7 @@ function createFormulaRepairBackupSheet_(sheet) {
 }
 
 function preflightInventoryFormulaRepairPlan_(sheet, plan) {
+  assertFormulaRepairTargetIsInventory_(sheet);
   (plan || []).forEach(change => {
     const range = sheet.getRange(change.row, change.columnNumber);
     const liveFormula = range.getFormula();
@@ -120,6 +137,7 @@ function preflightInventoryFormulaRepairPlan_(sheet, plan) {
 }
 
 function applyInventoryFormulaRepairPlan_(sheet, plan) {
+  assertFormulaRepairTargetIsInventory_(sheet);
   preflightInventoryFormulaRepairPlan_(sheet, plan);
   const segments = buildFormulaRepairSegments_(plan);
   segments.forEach(segment => {
@@ -134,6 +152,7 @@ function applyInventoryFormulaRepairPlan_(sheet, plan) {
 }
 
 function rollbackInventoryFormulaRepairPlan_(sheet, plan) {
+  assertFormulaRepairTargetIsInventory_(sheet);
   (plan || []).slice().reverse().forEach(change => {
     const range = sheet.getRange(change.row, change.columnNumber);
     const liveFormula = range.getFormula();
@@ -217,6 +236,7 @@ function repairInventoryFormulas_(options) {
     lock.waitLock(30000);
     sheet = settings.sheet || getSheetByConfiguredName_(CONFIG.SHEETS.INVENTORY);
     if (!sheet) throw new Error('Nie znaleziono arkusza: ' + CONFIG.SHEETS.INVENTORY);
+    assertFormulaRepairTargetIsInventory_(sheet);
     const products = settings.products || scanInventoryProducts_();
     const auditBefore = settings.audit || buildInventoryFormulaAudit_(sheet, products);
     writeInventoryFormulaAuditReport_(auditBefore);

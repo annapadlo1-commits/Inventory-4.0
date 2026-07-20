@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.3 — Health Check PAWILONÓW.
+ * Inventory PRO 4.3.2 — Health Check PAWILONÓW.
  */
 
 function runEnterpriseHealthCheck() {
