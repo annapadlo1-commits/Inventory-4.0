@@ -18,16 +18,16 @@ function parseInventoryText(inputText, runtimeContext) {
   lines.forEach(line => {
     const prepared = prepareParserText_(line);
     const lineTokens = prepared.split(/\s+/).filter(Boolean);
-    const locationOnly = readLocationAt_(lineTokens, 0);
-    if (locationOnly && locationOnly.consumed === lineTokens.length) {
-      currentLocation = locationOnly.location;
+    const leadingLocation = readLocationAt_(lineTokens, 0);
+    if (leadingLocation) currentLocation = leadingLocation.location;
+    if (leadingLocation && leadingLocation.consumed === lineTokens.length) {
       return;
     }
     const parsed = parseInventoryTextContinuous_(line, context);
     parsed.forEach(item => {
       if (!item.location && currentLocation) item.location = currentLocation;
-      if (currentLocation && item.originalInput && !normalizeText(item.originalInput).startsWith(normalizeText(currentLocation))) {
-        item.originalInput = currentLocation + ' ' + item.originalInput;
+      if (item.location && item.originalInput && !normalizeText(item.originalInput).startsWith(normalizeText(item.location))) {
+        item.originalInput = item.location + ' ' + item.originalInput;
       }
       results.push(item);
     });
