@@ -98,9 +98,20 @@ function assertSafeInventoryTargetColumn_(product, column) {
   return wanted;
 }
 
-function validateProductColumnMapping_(productType, columns) {
+function validateProductColumnMapping_(productType, columns, product) {
   const type = String(productType || '').trim().toUpperCase();
   const source = cloneProductColumns_(columns);
+  if (isDirectFinalInventoryProduct_(product)) {
+    const directColumn = getDirectFinalInventoryColumn_(product);
+    const directErrors = [];
+    if (source.quantity !== directColumn) {
+      directErrors.push('Wyjątek finalny musi mieć kolumnę sztuk ' + directColumn + '.');
+    }
+    ['weight', 'warehouse', 'darkroom', 'fridges'].forEach(key => {
+      if (source[key]) directErrors.push('Wyjątek finalny nie może używać pola „' + key + '”.');
+    });
+    return { valid: directErrors.length === 0, errors: directErrors, columns: source };
+  }
   const errors = [];
   const used = {};
   const allowed = getAllowedInputColumnsForProductType_(type);

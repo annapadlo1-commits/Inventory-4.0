@@ -236,7 +236,7 @@ function validateProductManagerPayload_(payload) {
     darkroom: normalizeColumnLetter_(sourceColumns.darkroom),
     fridges: normalizeColumnLetter_(sourceColumns.fridges)
   };
-  const mapping = validateProductColumnMapping_(type, columns);
+  const mapping = validateProductColumnMapping_(type, columns, { name: name, type: type });
   if (!mapping.valid) {
     throw new Error('Nieprawidłowe mapowanie kolumn: ' + mapping.errors.join(' '));
   }

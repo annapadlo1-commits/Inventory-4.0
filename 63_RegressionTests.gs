@@ -55,6 +55,8 @@ function runAllEnterpriseTests() {
     testFormulaWriteGuard432_,
     testCanonicalInventoryFormulas434_,
     testDirectFinalCoffeeException434_,
+    testDirectFinalProductManagerMapping4313_,
+    testXlsxExportWithoutDriveApi4313_,
     testRecoveryDictionaryContaminationGuard_,
     testFormulaRepairHardDisabled436_,
     testFormulaRepairSegments432_,
@@ -1280,6 +1282,26 @@ function testDirectFinalCoffeeException434_() {
   let blocked = false;
   try { assertSafeInventoryTargetColumn_(coffee, 'K'); } catch (error) { blocked = true; }
   assertCondition_(blocked, 'Zapis Czarnej Fali poza B musi być blokowany.');
+}
+
+function testDirectFinalProductManagerMapping4313_() {
+  const coffee = { name:'Czarna Fala Przelew 1 kg', type:'NORMAL' };
+  const valid = validateProductColumnMapping_('NORMAL', {
+    quantity:'B', weight:'', warehouse:'', darkroom:'', fridges:''
+  }, coffee);
+  assertCondition_(valid.valid, 'Product Manager musi akceptować B jako finalne sztuki Czarnej Fali.');
+  const invalid = validateProductColumnMapping_('NORMAL', {
+    quantity:'H', weight:'C', warehouse:'', darkroom:'', fridges:''
+  }, coffee);
+  assertCondition_(!invalid.valid, 'Product Manager musi odrzucać zwykłe mapowanie Czarnej Fali.');
+}
+
+function testXlsxExportWithoutDriveApi4313_() {
+  const url = buildSpreadsheetXlsxExportUrl_('test-sheet-id');
+  assertCondition_(url === 'https://docs.google.com/spreadsheets/d/test-sheet-id/export?format=xlsx',
+    'Nieprawidłowy endpoint XLSX.');
+  assertCondition_(url.indexOf('googleapis.com/drive/v3') === -1,
+    'Eksport XLSX nie może wymagać Drive API v3.');
 }
 
 function testFormulaRepairSegments432_() {
