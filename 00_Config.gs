@@ -7,7 +7,7 @@ const CONFIG = Object.freeze({
     NUMBER: 1,
     NEXT_LOCATION: 'KRUCZA'
   }),
-  VERSION: '4.3.6-SAFE-MODE-PAWILONY',
+  VERSION: '4.3.10-SAFE-MODE-PAWILONY',
 
   SHEETS: Object.freeze({
     INVENTORY: 'INWENTURA',
@@ -95,7 +95,7 @@ const CONFIG = Object.freeze({
       key: 'darkroom',
       label: 'Darkroom',
       columnKey: 'darkroom',
-      aliases: Object.freeze(['darkroom', 'dark room'])
+      aliases: Object.freeze(['darkroom', 'dark room', 'dark rum'])
     }),
     Object.freeze({
       key: 'lodowki',

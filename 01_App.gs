@@ -126,8 +126,8 @@ function activateSheetByName_(sheetName) {
 
 function showAbout() {
   const html = renderInventoryTemplate_('UI_About')
-    .setWidth(520)
-    .setHeight(500);
+    .setWidth(620)
+    .setHeight(760);
 
   SpreadsheetApp.getUi().showModalDialog(
     html,
