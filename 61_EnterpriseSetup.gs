@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.2
+ * Inventory PRO 4.3.6 SAFE MODE
  * Konfiguracja PAWILONÓW z release gate dla kontraktu formuł.
  */
 function enterpriseSetup() {
@@ -30,15 +30,20 @@ function enterpriseSetup() {
       );
     }
 
-    const formulaRepair = formulaAuditBefore.safe
-      ? { changedCells: 0, backupSheetName: '', audit: formulaAuditBefore }
-      : repairInventoryFormulas_({
-          createBackup: !CONFIG.FORMULA_POLICY || CONFIG.FORMULA_POLICY.CREATE_BACKUP_BEFORE_REPAIR !== false,
-          source: 'enterpriseSetup',
-          failOnConflicts: true,
-          requireFullySafe: true,
-          audit: formulaAuditBefore
-        });
+
+    const formulaRepair = {
+      changedCells: 0,
+      backupSheetName: '',
+      audit: formulaAuditBefore
+    };
+
+    if (!formulaAuditBefore.safe) {
+      throw new Error(
+        'Enterprise Setup przerwany bez modyfikowania formuł. ' +
+        'Automatyczna naprawa jest wyłączona w wersji SAFE MODE. ' +
+        'Sprawdź raport w zakładce „' + CONFIG.SHEETS.FORMULA_AUDIT + '”.'
+      );
+    }
 
     repairDictionaryCategoriesFromInventory();
     applyInventoryTheme();
@@ -55,6 +60,7 @@ function enterpriseSetup() {
       repairedFormulaCells: formulaRepair.changedCells,
       formulaBackupSheet: formulaRepair.backupSheetName,
       formulasSafe: formulaRepair.audit && formulaRepair.audit.safe,
+      automaticFormulaRepairEnabled: false,
       validationWarnings: validation.warnings.length,
       durationMs: Date.now() - startedAt
     };
@@ -69,6 +75,7 @@ function enterpriseSetup() {
         repairedFormulaCells: result.repairedFormulaCells,
         formulaBackupSheet: result.formulaBackupSheet,
         formulasSafe: result.formulasSafe,
+        automaticFormulaRepairEnabled: result.automaticFormulaRepairEnabled,
         validationWarnings: result.validationWarnings
       },
       result.durationMs

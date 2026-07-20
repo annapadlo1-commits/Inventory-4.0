@@ -1,0 +1,6 @@
+Inventory PRO PAWILONY 4.3.4
+
+- Naprawiono test kanonicznej formuły K po hotfixie separatorów.
+- Osadzono logo PNG bezpośrednio w UI_About.html.
+- Dodano wyjątek Czarna Fala Przelew 1 kg: zapis i stan końcowy wyłącznie w kolumnie B.
+- Produkt nie ma formuł w E, J ani K i nie jest uwzględniany w audycie formuł.

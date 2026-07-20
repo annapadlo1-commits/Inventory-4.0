@@ -328,6 +328,9 @@ function buildEditableReviewCells_(summaryItem) {
 
 function applySummaryWarnings_(item, settings) {
   const details = item.details || {};
+  if (isDirectFinalInventoryProduct_({name:item.product})) {
+    return { 'Stan końcowy': normalizeReportNumber_(item.finalTotal) };
+  }
   if (item.type === CONFIG.PRODUCT_TYPES.LOCATION) {
     getLocationAreaDefinitions_().forEach(area => {
       const value = details[area.columnKey];

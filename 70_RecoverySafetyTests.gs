@@ -1,7 +1,17 @@
+/**
+ * Inventory PRO 4.3.6 SAFE MODE — testy zabezpieczeń niedestrukcyjnych.
+ */
+
 function testRecoveryDictionaryContaminationGuard_() {
   const fake = {
-    getLastRow: () => 4,
-    getRange: () => ({ getDisplayValues: () => [['Amaro Lucano 1L'], ['function broken() {'], ['Campari 0,7 l']] })
+    getLastRow: function() { return 4; },
+    getRange: function() {
+      return {
+        getDisplayValues: function() {
+          return [['Amaro Lucano 1L'], ['function broken() {'], ['Campari 0,7 l']];
+        }
+      };
+    }
   };
   const issues = detectDictionaryCodeContamination_(fake);
   if (issues.length !== 1 || issues[0].row !== 3) {
@@ -10,13 +20,20 @@ function testRecoveryDictionaryContaminationGuard_() {
   return true;
 }
 
-function testFormulaRepairRejectsDictionarySheet_() {
+function testFormulaRepairHardDisabled436_() {
   let blocked = false;
+  let message = '';
   try {
-    assertFormulaRepairTargetIsInventory_({ getName: () => CONFIG.SHEETS.DICTIONARY });
+    repairInventoryFormulas_({ source: 'test' });
   } catch (error) {
     blocked = true;
+    message = String(error && error.message || error);
   }
-  if (!blocked) throw new Error('Naprawa formuł nie zablokowała arkusza SLOWNIK.');
+  if (!blocked) {
+    throw new Error('Funkcja naprawy formuł nie została twardo zablokowana.');
+  }
+  if (message.indexOf('wyłączona') < 0 || message.indexOf('żadnego zapisu') < 0) {
+    throw new Error('Blokada naprawy nie zwróciła jednoznacznego komunikatu bezpieczeństwa.');
+  }
   return true;
 }

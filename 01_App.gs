@@ -20,7 +20,6 @@ function onOpen() {
     .addItem('Pokaż diagnostykę', 'showEnterpriseDiagnostics')
     .addItem('Diagnostyka Parsera 4.3', 'showParserDiagnostics')
     .addItem('Audyt formuł PAWILONÓW', 'auditInventoryFormulaCoverageWithDialog')
-    .addItem('Przywróć formuły PAWILONÓW (z backupem)', 'repairInventoryFormulasWithDialog')
     .addSeparator()
     .addItem('Wyczyść cache katalogu', 'clearProductCatalogCache')
     .addItem('Audyt danych produktów', 'runProductDataAudit')

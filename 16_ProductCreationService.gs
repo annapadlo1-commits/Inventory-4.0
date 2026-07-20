@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.2
+ * Inventory PRO 4.3.4
  * Bezpieczny workflow tworzenia nowych produktów z poziomu importu.
  */
 

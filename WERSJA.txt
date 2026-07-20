@@ -1,3 +1,7 @@
-Inventory PRO PAWILONY 4.3.5-RECOVERY
-Base: 4.3.2
-Purpose: recovery after SLOWNIK contamination
+Inventory PRO PAWILONY 4.3.6-SAFE-MODE
+Base funkcjonalna: 4.3.4
+Tryb: niedestrukcyjny
+Automatyczna naprawa formuł: WYŁĄCZONA
+Enterprise Setup: audytuje formuły, ale ich nie zapisuje
+SLOWNIK: guard fragmentów kodu aktywny
+Czarna Fala Przelew 1 kg: stan końcowy wyłącznie w kolumnie B

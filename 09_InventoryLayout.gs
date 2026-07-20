@@ -1,5 +1,17 @@
 /** Inventory PRO 4.3 — jedno źródło prawdy dla układu INWENTURY. */
 
+
+/** Wyjątek PAWILONÓW: kawa przelewowa jest wpisywana bezpośrednio jako stan końcowy w B. */
+function isDirectFinalInventoryProduct_(product) {
+  const name = normalizeText(product && product.name || product && product.product || '');
+  return name === 'czarna fala przelew 1 kg';
+}
+
+function getDirectFinalInventoryColumn_(product) {
+  return isDirectFinalInventoryProduct_(product) ? 'B' : '';
+}
+
+
 function getConfiguredInventoryLayout_(productType) {
   const type = String(productType || '').trim().toUpperCase();
   const configured = CONFIG.INVENTORY_LAYOUT && CONFIG.INVENTORY_LAYOUT[type];
@@ -59,6 +71,14 @@ function isAllowedInputColumnForProductType_(productType, column) {
 }
 
 function assertSafeInventoryTargetColumn_(product, column) {
+  const directFinal = getDirectFinalInventoryColumn_(product);
+  const wantedDirect = normalizeColumnLetter_(column);
+  if (directFinal) {
+    if (wantedDirect !== directFinal) {
+      throw new Error('Produkt „Czarna Fala Przelew 1 kg” może być zapisywany wyłącznie do kolumny B.');
+    }
+    return directFinal;
+  }
   const type = String(product && product.type || '').trim().toUpperCase();
   const wanted = normalizeColumnLetter_(column);
   const name = String(product && product.name || '').trim() || 'nieznany produkt';

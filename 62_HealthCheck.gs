@@ -1,5 +1,5 @@
 /**
- * Inventory PRO 4.3.2 — Health Check PAWILONÓW.
+ * Inventory PRO 4.3.6 SAFE MODE — Health Check PAWILONÓW.
  */
 
 function runEnterpriseHealthCheck() {
@@ -75,7 +75,10 @@ function runEnterpriseTestsSilently_() {
     testPawilonyMappingGuard432_,
     testPawilonyTargetColumnRouting432_,
     testNewProductRowRollback432_,
-    testCanonicalInventoryFormulas432_,
+    testCanonicalInventoryFormulas434_,
+    testDirectFinalCoffeeException434_,
+    testRecoveryDictionaryContaminationGuard_,
+    testFormulaRepairHardDisabled436_,
     testFormulaRepairConcurrency432_,
     testFormulaConflictClassification432_
   ];

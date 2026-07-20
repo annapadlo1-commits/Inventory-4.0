@@ -1,13 +1,13 @@
 const CONFIG = Object.freeze({
   EDITION: 'Production Edition',
-  RELEASE_CHANNEL: 'RECOVERY',
+  RELEASE_CHANNEL: 'STABLE',
   LOCATION: Object.freeze({
     ID: 'PAWILONY',
     NAME: 'PAWILONY',
     NUMBER: 1,
     NEXT_LOCATION: 'KRUCZA'
   }),
-  VERSION: '4.3.5-RECOVERY-PAWILONY',
+  VERSION: '4.3.6-SAFE-MODE-PAWILONY',
 
   SHEETS: Object.freeze({
     INVENTORY: 'INWENTURA',
@@ -120,7 +120,7 @@ const CONFIG = Object.freeze({
   }),
 
   CACHE: Object.freeze({
-    CATALOG_KEY: 'inventory_pro_catalog_pawilony_v6',
+    CATALOG_KEY: 'inventory_pro_catalog_pawilony_v7',
     TTL_SECONDS: 21600
   }),
 

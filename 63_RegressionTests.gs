@@ -53,7 +53,10 @@ function runAllEnterpriseTests() {
     testSparseWritePlan432_,
     testSparseRollback432_,
     testFormulaWriteGuard432_,
-    testCanonicalInventoryFormulas432_,
+    testCanonicalInventoryFormulas434_,
+    testDirectFinalCoffeeException434_,
+    testRecoveryDictionaryContaminationGuard_,
+    testFormulaRepairHardDisabled436_,
     testFormulaRepairSegments432_,
     testFormulaRepairConcurrency432_,
     testFormulaConflictClassification432_,
@@ -1009,7 +1012,7 @@ function testLongestMatchZeroRC34_() {
 function ip34Assert_(condition, message) {
   if (!condition) throw new Error(message || 'Assertion failed');
 }
-/** Inventory PRO 4.3.2 — kontrakt układu i bezpieczeństwa PAWILONÓW. */
+/** Inventory PRO 4.3.4 — kontrakt układu i bezpieczeństwa PAWILONÓW. */
 function testPawilonyLayoutContract432_() {
   const normal = getInventorySummaryLayout_(CONFIG.PRODUCT_TYPES.NORMAL);
   const keg = getInventorySummaryLayout_(CONFIG.PRODUCT_TYPES.KEG);
@@ -1246,7 +1249,7 @@ function testFormulaWriteGuard432_() {
   assertCondition_(liveFormulaBlocked, 'Istniejąca formuła w dozwolonej kolumnie wejściowej musi blokować zapis.');
 }
 
-function testCanonicalInventoryFormulas432_() {
+function testCanonicalInventoryFormulas434_() {
   const normal = { inventoryRow:3, type:'NORMAL', category:'BITTER', name:'Amaro' };
   const keg = { inventoryRow:85, type:'KEG', category:'PIWO KEG', name:'Wawerskie' };
   const location = { inventoryRow:89, type:'LOCATION', category:'PIWO BUTELKI', name:'Butelka' };
@@ -1255,16 +1258,28 @@ function testCanonicalInventoryFormulas432_() {
     'Nieprawidłowa formuła E dla NORMAL.');
   assertCondition_(getCanonicalInventoryFormula_(normal, 'J') === '=H3*I3',
     'Nieprawidłowa formuła J dla NORMAL.');
-  assertCondition_(getCanonicalInventoryFormula_(normal, 'K') === '=SUM(E3,G3,J3)',
+  assertCondition_(getCanonicalInventoryFormula_(normal, 'K') === '=SUM(E3:G3)+J3',
     'Nieprawidłowa formuła K dla NORMAL.');
   assertCondition_(getCanonicalInventoryFormula_(keg, 'E') === '=C85-D85',
     'Nieprawidłowa formuła E dla KEG.');
   assertCondition_(getCanonicalInventoryFormula_(keg, 'I') === '=G85*H85',
     'Nieprawidłowa formuła I dla KEG.');
-  assertCondition_(getCanonicalInventoryFormula_(keg, 'J') === '=SUM(E85,I85)',
+  assertCondition_(getCanonicalInventoryFormula_(keg, 'J') === '=E85+I85',
     'Nieprawidłowa formuła J dla KEG.');
-  assertCondition_(getCanonicalInventoryFormula_(location, 'E') === '=SUM(B89,C89,D89)',
+  assertCondition_(getCanonicalInventoryFormula_(location, 'E') === '=SUM(B89:D89)',
     'Nieprawidłowa formuła E dla LOCATION.');
+}
+
+
+function testDirectFinalCoffeeException434_() {
+  const coffee = { inventoryRow:275, type:'NORMAL', category:'KAWA', name:'Czarna Fala Przelew 1 kg', columns:{weight:'C',quantity:'H'} };
+  assertCondition_(isDirectFinalInventoryProduct_(coffee), 'Nie rozpoznano wyjątku Czarna Fala Przelew 1 kg.');
+  assertCondition_(resolveTargetColumn_(coffee, 3, '') === 'B', 'Czarna Fala musi zapisywać wartość do B.');
+  assertCondition_(getInventoryFormulaContract_(coffee).length === 0, 'Czarna Fala nie może mieć formuł E/J/K.');
+  assertCondition_(assertSafeInventoryTargetColumn_(coffee, 'B') === 'B', 'Kolumna B musi być dozwolona dla Czarnej Fali.');
+  let blocked = false;
+  try { assertSafeInventoryTargetColumn_(coffee, 'K'); } catch (error) { blocked = true; }
+  assertCondition_(blocked, 'Zapis Czarnej Fali poza B musi być blokowany.');
 }
 
 function testFormulaRepairSegments432_() {

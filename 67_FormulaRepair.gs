@@ -1,27 +1,12 @@
 /**
- * Inventory PRO 4.3.5-RECOVERY — bezpieczna odbudowa formuł PAWILONÓW.
+ * Inventory PRO 4.3.6 SAFE MODE — bezpieczna odbudowa formuł PAWILONÓW.
  *
  * Naprawa nie nadpisuje konfliktowych wartości. Komórki puste, spłaszczone
  * z wynikiem zgodnym z obliczeniem oraz błędne formuły mogą zostać naprawione
  * po utworzeniu pełnej kopii zakładki.
  */
 
-
-function assertFormulaRepairTargetIsInventory_(sheet) {
-  if (!sheet) throw new Error('Brak arkusza docelowego naprawy formuł.');
-  const expected = normalizeText(CONFIG.SHEETS.INVENTORY);
-  const actual = normalizeText(sheet.getName());
-  if (actual !== expected) {
-    throw new Error(
-      'BLOKADA BEZPIECZEŃSTWA: naprawa formuł może modyfikować wyłącznie arkusz ' +
-      CONFIG.SHEETS.INVENTORY + '. Otrzymano: ' + sheet.getName() + '.'
-    );
-  }
-  return true;
-}
-
 function buildInventoryFormulaRepairPlan_(sheet, products, audit) {
-  assertFormulaRepairTargetIsInventory_(sheet);
   const formulaAudit = audit || buildInventoryFormulaAudit_(sheet, products || []);
   const values = sheet.getRange(
     1, 1, Math.max(sheet.getLastRow(), 1), Math.max(getInventoryLayoutMaxColumn_(), 1)
@@ -97,7 +82,6 @@ function buildFormulaRepairSegments_(plan) {
 }
 
 function createFormulaRepairBackupSheet_(sheet) {
-  assertFormulaRepairTargetIsInventory_(sheet);
   const spreadsheet = sheet.getParent();
   const timestamp = Utilities.formatDate(
     new Date(),
@@ -117,7 +101,6 @@ function createFormulaRepairBackupSheet_(sheet) {
 }
 
 function preflightInventoryFormulaRepairPlan_(sheet, plan) {
-  assertFormulaRepairTargetIsInventory_(sheet);
   (plan || []).forEach(change => {
     const range = sheet.getRange(change.row, change.columnNumber);
     const liveFormula = range.getFormula();
@@ -137,7 +120,6 @@ function preflightInventoryFormulaRepairPlan_(sheet, plan) {
 }
 
 function applyInventoryFormulaRepairPlan_(sheet, plan) {
-  assertFormulaRepairTargetIsInventory_(sheet);
   preflightInventoryFormulaRepairPlan_(sheet, plan);
   const segments = buildFormulaRepairSegments_(plan);
   segments.forEach(segment => {
@@ -152,7 +134,6 @@ function applyInventoryFormulaRepairPlan_(sheet, plan) {
 }
 
 function rollbackInventoryFormulaRepairPlan_(sheet, plan) {
-  assertFormulaRepairTargetIsInventory_(sheet);
   (plan || []).slice().reverse().forEach(change => {
     const range = sheet.getRange(change.row, change.columnNumber);
     const liveFormula = range.getFormula();
@@ -225,6 +206,10 @@ function formatFormulaConflictCells_(audit, limit) {
 }
 
 function repairInventoryFormulas_(options) {
+  throw new Error(
+    'Automatyczna naprawa formuł jest wyłączona w wersji 4.3.6 SAFE MODE. ' +
+    'Funkcja nie wykonała żadnego zapisu.'
+  );
   const settings = options || {};
   const lock = LockService.getDocumentLock();
   const startedAt = Date.now();
@@ -236,7 +221,6 @@ function repairInventoryFormulas_(options) {
     lock.waitLock(30000);
     sheet = settings.sheet || getSheetByConfiguredName_(CONFIG.SHEETS.INVENTORY);
     if (!sheet) throw new Error('Nie znaleziono arkusza: ' + CONFIG.SHEETS.INVENTORY);
-    assertFormulaRepairTargetIsInventory_(sheet);
     const products = settings.products || scanInventoryProducts_();
     const auditBefore = settings.audit || buildInventoryFormulaAudit_(sheet, products);
     writeInventoryFormulaAuditReport_(auditBefore);
@@ -355,52 +339,12 @@ function verifyCanonicalFormulasForProductRow_(sheet, product) {
 }
 
 function repairInventoryFormulasWithDialog() {
-  return runSafely_(
-    'FormulaRepair',
-    'repairInventoryFormulasWithDialog',
-    function() {
-      const auditBefore = auditInventoryFormulaCoverage_();
-      writeInventoryFormulaAuditReport_(auditBefore);
-      if (auditBefore.safe) {
-        SpreadsheetApp.getUi().alert(
-          'Inventory PRO — formuły PAWILONÓW',
-          'Wszystkie oczekiwane formuły są już obecne i poprawne.',
-          SpreadsheetApp.getUi().ButtonSet.OK
-        );
-        return { success: true, changedCells: 0, audit: auditBefore };
-      }
-
-      const ui = SpreadsheetApp.getUi();
-      const conflictNotice = auditBefore.conflictFormulaCells
-        ? '\n\nKonflikty (' + auditBefore.conflictFormulaCells + ') NIE zostaną nadpisane. ' +
-          'Lista trafi do ukrytej zakładki „' + CONFIG.SHEETS.FORMULA_AUDIT + '”.'
-        : '';
-      const response = ui.alert(
-        'Przywrócić bezpieczne formuły PAWILONÓW?',
-        'Do naprawy bez konfliktów: ' + auditBefore.repairableFormulaCells + '.\n' +
-          'Konflikty wymagające decyzji: ' + auditBefore.conflictFormulaCells + '.\n' +
-          'Przed zmianą zostanie utworzona ukryta kopia całej zakładki.' + conflictNotice,
-        ui.ButtonSet.YES_NO
-      );
-      if (response !== ui.Button.YES) return { success: false, cancelled: true };
-
-      const result = repairInventoryFormulas_({
-        createBackup: true,
-        source: 'menu',
-        failOnConflicts: false,
-        requireFullySafe: false
-      });
-      ui.alert(
-        'Inventory PRO — naprawa formuł',
-        'Zmienione komórki: ' + result.changedCells + '\n' +
-          'Bloki zapisu: ' + result.segments + '\n' +
-          'Kopia bezpieczeństwa: ' + (result.backupSheetName || 'nie była potrzebna') + '\n' +
-          'Konflikty pozostawione bez zmian: ' + result.conflictsRemaining + '\n' +
-          'Status końcowy: ' + (result.fullySafe ? 'OK' : 'WYMAGA DECYZJI DLA KONFLIKTÓW'),
-        ui.ButtonSet.OK
-      );
-      return result;
-    },
-    'Nie udało się przywrócić formuł PAWILONÓW.'
+  const ui = SpreadsheetApp.getUi();
+  ui.alert(
+    'Inventory PRO — naprawa formuł wyłączona',
+    'Automatyczna naprawa formuł jest wyłączona w wersji 4.3.6 SAFE MODE. ' +
+      'Nie wykonano żadnego zapisu.',
+    ui.ButtonSet.OK
   );
+  return { success: false, disabled: true, changedCells: 0 };
 }
