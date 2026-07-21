@@ -1,4 +1,5 @@
 function onOpen() {
+  registerInventorySpreadsheet_();
   const ui = SpreadsheetApp.getUi();
 
   const reportingMenu = ui.createMenu('Raportowanie')
@@ -20,6 +21,8 @@ function onOpen() {
     .addItem('Pokaż diagnostykę', 'showEnterpriseDiagnostics')
     .addItem('Diagnostyka Parsera 4.3', 'showParserDiagnostics')
     .addItem('Audyt formuł PAWILONÓW', 'auditInventoryFormulaCoverageWithDialog')
+    .addItem('Skonfiguruj transkrypcję Gemini', 'configureGeminiTranscription')
+    .addItem('Sprawdź transkrypcję Gemini', 'showGeminiTranscriptionStatus')
     .addSeparator()
     .addItem('Wyczyść cache katalogu', 'clearProductCatalogCache')
     .addItem('Audyt danych produktów', 'runProductDataAudit')

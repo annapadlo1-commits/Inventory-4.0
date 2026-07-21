@@ -38,7 +38,7 @@ function isConfiguredSheetName_(actualName, configuredName) {
 }
 
 function getSheetByConfiguredName_(configuredName) {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = getInventorySpreadsheet_();
   const wanted = getConfiguredSheetAliases_(configuredName).map(normalizeText);
   const sheets = spreadsheet.getSheets();
   for (let index = 0; index < sheets.length; index++) {
@@ -50,5 +50,28 @@ function getSheetByConfiguredName_(configuredName) {
 function getOrCreateConfiguredSheet_(configuredName) {
   const existing = getSheetByConfiguredName_(configuredName);
   if (existing) return existing;
-  return SpreadsheetApp.getActiveSpreadsheet().insertSheet(String(configuredName || '').trim());
+  return getInventorySpreadsheet_().insertSheet(String(configuredName || '').trim());
+}
+
+function registerInventorySpreadsheet_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  if (!spreadsheet) return '';
+  PropertiesService.getScriptProperties().setProperty(
+    'INVENTORY_SPREADSHEET_ID',
+    spreadsheet.getId()
+  );
+  return spreadsheet.getId();
+}
+
+function getInventorySpreadsheet_() {
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) return active;
+  const id = PropertiesService.getScriptProperties()
+    .getProperty('INVENTORY_SPREADSHEET_ID');
+  if (!id) {
+    throw new Error(
+      'Aplikacja mobilna nie jest jeszcze powiązana z arkuszem. Otwórz arkusz raz po instalacji.'
+    );
+  }
+  return SpreadsheetApp.openById(id);
 }
